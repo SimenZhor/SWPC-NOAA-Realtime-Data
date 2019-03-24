@@ -142,12 +142,12 @@ class swpc():
                         dataset[key].append(float(datapoint[internal_i].replace("\x00","")))
                     except ValueError:
                         print("Found error in: '"+key+"', added -9999999 instead. Original error message:")
-                        print(e)
-                        dataset[key].append(-9999999)
+                        print("ValueError: "+e)
+                        dataset[key].append(None)
                 except TypeError as e:
-                    print("Found error in: '"+key+"', added -9999999 instead. Original error message:")
-                    print(e)
-                    dataset[key].append(-9999999)
+                    print("Found error in: '"+key+"', added None instead. Original error message:")
+                    print("TypeError: "+e)
+                    dataset[key].append(None)
             internal_i = internal_i + 1
 
     def __convert_time_tag_to_local_time(self,time_tag):
