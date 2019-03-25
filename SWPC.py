@@ -142,11 +142,11 @@ class swpc():
                         dataset[key].append(float(datapoint[internal_i].replace("\x00","")))
                     except ValueError:
                         print("Found error in: '"+key+"', added -9999999 instead. Original error message:")
-                        print("ValueError: "+e)
+                        print("ValueError: "+str(e))
                         dataset[key].append(None)
                 except TypeError as e:
                     print("Found error in: '"+key+"', added None instead. Original error message:")
-                    print("TypeError: "+e)
+                    print("TypeError: "+str(e))
                     dataset[key].append(None)
             internal_i = internal_i + 1
 
@@ -162,8 +162,22 @@ class swpc():
         t_utc = t_utc.replace(tzinfo=from_zone)
         return t_utc.astimezone(to_zone)
     
-   
-
+    def refresh_dataset(self, dataset_name, resolution):        
+        dataset_dict = getattr(self,dataset_name.replace("-","_"))
+        for api_key in self.api_urls:
+            if api_key.startswith(dataset_name):
+                #There will be several matches for datasets that are provided in more than one resolution
+                if api_key.endswith(resolution):
+                    url = self.api_urls[api_key];
+                    #Download dataset 
+                    space_weather_req = urllib.request.Request(url)
+                    opener = urllib.request.build_opener()
+                    f = opener.open(space_weather_req)
+                    temp_dataset =  json.loads(f.read())
+                    #extract all data for this resolution of the dataset_name
+                    dataset_dict[api_key] = self.__extract_dataset(temp_dataset)
+                    return dataset_dict[api_key]
+        return None
 
 if __name__ == "__main__":
     s = swpc(debug = True)
