@@ -34,3 +34,5 @@ print(s.unsupported.keys())
 
 #This function is the first attempt for the user to refresh only the JSON files they want.
 mag = s.refresh_dataset("mag","1-day")
+if not mag == None:
+    plt.plot(mag["time_tag_local_datetime"],mag["bz_gmt"])
