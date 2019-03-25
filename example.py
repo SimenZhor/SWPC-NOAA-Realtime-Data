@@ -32,5 +32,4 @@ print(s.SUPPORTED_APIS)
 #And the following will not be supported:
 print(s.unsupported.keys())
 
-#This function is the first attempt for the user to refresh only the JSON files they want.
-mag = s.refresh_dataset("mag","1-day")
+#Currently there is no way for the user to refresh only the JSON files they want.
