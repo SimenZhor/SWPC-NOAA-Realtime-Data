@@ -25,43 +25,24 @@ class swpc():
                       "planetary-k-index-dst","10cm-flux",
                       "noaa-planetary-k-index"] #name of the supported API's (excluding resolution and filetype)
     
-    first_level_urls = {}
-    sub_level_urls = {}
-    api_urls = {}
-    unsupported = {}
-    
     def __init__(self, debug=False):
         self.debug = debug
+            
+        self.first_level_urls = {}
+        self.sub_level_urls = {}
+        self.api_urls = {}
+        self.unsupported = {}
+        
         #Extract all the currently supported URLs into the api_urls variable:
-        first_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.BASE_URL).read().decode("utf-8"))
-        for sub_url in first_level_list:
-            key = sub_url[0:-1] #remove the ending '/'
-            self.first_level_urls[key] = self.BASE_URL+sub_url
+        self.__look_for_urls(self.BASE_URL,self.first_level_urls)
+        for key in self.first_level_urls:
             #Check if the folder is currently supported by this class
             if key in self.SUPPORTED_TOP_LEVEL_FOLDERS:
-                sub_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.first_level_urls[key]).read().decode("utf-8"))
-                for sub_sub in sub_level_list:
-                    if sub_sub.endswith(".json"):
-                        api_name = sub_sub[0:sub_sub.find(".json")]
-                        if self.__is_supported(self.first_level_urls[key],api_name):
-                            self.api_urls[api_name] = self.first_level_urls[key]+sub_sub
-                    else:
-                        sub_key = sub_sub[0:-1]
-                        self.sub_level_urls[sub_key] = self.first_level_urls[key]+sub_sub
+                self.__look_for_urls(self.first_level_urls[key],self.sub_level_urls,self.api_urls)
+                for sub_key in self.sub_level_urls:
                         #This is currently assumed to be the "bottom level" because I haven't encountered API's "further down" than this that I've needed (yet)
                         if sub_key in self.SUPPORTED_SUBFOLDERS:
-                            bottom_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.sub_level_urls[sub_key]).read().decode("utf-8"))
-                            for api in bottom_level_list:
-                                if api.endswith(".json"):
-                                    api_name = api[0:api.find(".json")]
-                                    if self.__is_supported(self.sub_level_urls[sub_key],api_name):
-                                        self.api_urls[api_name] = self.sub_level_urls[sub_key]+api
-                                else:
-                                    if self.debug and not api.startswith("/"):
-                                        # links starting with '/" is the link to the parent directory and should be ignored
-                                        print("There are more folders or files existing in '"+sub_key+"'. Namely: '"+api+"'")
-                
-                            
+                            self.__look_for_urls(self.sub_level_urls[sub_key],None,self.api_urls)
                         else:
                             if self.debug and not sub_key.startswith("/") and len(sub_key) > 0:
                                 print("Sub level folder '"+sub_key+"' currently not supported")
@@ -75,7 +56,88 @@ class swpc():
             dataset_dict = {} # This dictionary will contain all resolutions of the given dataset when extraction is done
             self.__initialize_dataset(dataset_dict,dataset_name)
             setattr(self,dataset_name.replace("-","_"),dataset_dict) # Apply the dataset_dict as a variable of the class
-     
+#    def __init__(self, debug=False):
+#        self.debug = debug
+#            
+#        self.first_level_urls = {}
+#        self.sub_level_urls = {}
+#        self.api_urls = {}
+#        self.unsupported = {}
+#        
+#        #Extract all the currently supported URLs into the api_urls variable:
+#        first_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.BASE_URL).read().decode("utf-8"))
+#        for sub_url in first_level_list:
+#            key = sub_url[0:-1] #remove the ending '/'
+#            self.first_level_urls[key] = self.BASE_URL+sub_url
+#            #Check if the folder is currently supported by this class
+#            if key in self.SUPPORTED_TOP_LEVEL_FOLDERS:
+#                sub_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.first_level_urls[key]).read().decode("utf-8"))
+#                for sub_sub in sub_level_list:
+#                    if sub_sub.endswith(".json"):
+#                        api_name = sub_sub[0:sub_sub.find(".json")]
+#                        if self.__is_supported(self.first_level_urls[key],api_name):
+#                            self.api_urls[api_name] = self.first_level_urls[key]+sub_sub
+#                    else:
+#                        sub_key = sub_sub[0:-1]
+#                        if len(sub_key)>0:
+#                            self.sub_level_urls[sub_key] = self.first_level_urls[key]+sub_sub
+#                        #This is currently assumed to be the "bottom level" because I haven't encountered API's "further down" than this that I've needed (yet)
+#                        if sub_key in self.SUPPORTED_SUBFOLDERS:
+#                            bottom_level_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(self.sub_level_urls[sub_key]).read().decode("utf-8"))
+#                            for api in bottom_level_list:
+#                                if api.endswith(".json"):
+#                                    api_name = api[0:api.find(".json")]
+#                                    if self.__is_supported(self.sub_level_urls[sub_key],api_name):
+#                                        self.api_urls[api_name] = self.sub_level_urls[sub_key]+api
+#                                else:
+#                                    if self.debug and not api.startswith("/"):
+#                                        # links starting with '/" is the link to the parent directory and should be ignored
+#                                        print("There are more folders or files existing in '"+sub_key+"'. Namely: '"+api+"'")
+#                
+#                            
+#                        else:
+#                            if self.debug and not sub_key.startswith("/") and len(sub_key) > 0:
+#                                print("Sub level folder '"+sub_key+"' currently not supported")
+#            else:
+#                if self.debug and len(key) > 0:
+#                    print("Top level folder '"+key+"' currently not supported")
+#        
+#        #Done extracting supported URLS
+#        #Unpack the supported API's
+#        for dataset_name in self.SUPPORTED_APIS:
+#            dataset_dict = {} # This dictionary will contain all resolutions of the given dataset when extraction is done
+#            self.__initialize_dataset(dataset_dict,dataset_name)
+#            setattr(self,dataset_name.replace("-","_"),dataset_dict) # Apply the dataset_dict as a variable of the class
+#    
+    def __look_for_urls(self,parent_url,storage_dict,json_url_dict=None):
+        url_list = re.findall(r"""<\s*a\s*href=["']([^=]+)["']""", urllib.request.urlopen(parent_url).read().decode("utf-8"))
+        for url in url_list:
+            if not json_url_dict == None:
+                #Insert all files ending with .json to the json_url_dict                
+                if url.endswith(".json"):
+                        api_name = url[0:url.find(".json")] #remove the .json file ending
+                        if self.__is_supported(parent_url,api_name):
+                            json_url_dict[api_name] = parent_url+url
+                            continue
+                        else:
+                            if self.debug and len(url) > 0:
+                                print("Found unsupported API: '"+url+"'")
+                                continue
+                if storage_dict == None and self.debug and not url.startswith("/"):           
+                    # links starting with '/" is the link to the parent directory and should be ignored
+                    print("There are more folders or files existing in '"+parent_url+"'. Namely: '"+url+"'")
+                    continue
+                    
+            #Don't care about file endings
+            if not storage_dict == None:
+                key = url[0:-1] #remove the ending '/'
+                if len(key) > 0:
+                    storage_dict[key] = parent_url+url
+            else:
+                 assert(Exception("No dictionary provided for url-storage"))
+                                
+        #return storage_dict
+        
     def __is_supported(self,parent_address, api_name):
         api = api_name+".json"
         supported = False
